@@ -1,0 +1,29 @@
+# Java / Maven
+/target/
+/.mvn/
+/mvnw* 
+*.class
+*.jar
+*.war
+
+# IDEs
+/.idea/
+/.vscode/
+*.iml
+
+# Node
+/frontend/node_modules/
+/frontend/build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# log / env
+*.log
+*.env
+application.properties
+
+# IntelliJ specific
+out/
+.idea/
