@@ -1,36 +1,66 @@
 import React, { useState } from "react";
 import { createBooking } from "../api";
 
-function BookingForm() {
+function BookingForm({ rooms, currentUser, onBookingCreated, onError }) {
   const [booking, setBooking] = useState({
     roomId: "",
-    userId: "",
     start: "",
     end: "",
     purpose: ""
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => setBooking({ ...booking, [e.target.name]: e.target.value });
+  const toIsoDateTime = (value) => {
+    if (!value) {
+      return "";
+    }
+    return value.length === 16 ? `${value}:00` : value;
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    createBooking(booking)
-      .then(() => {
-        alert("Booking created!");
-        setBooking({ roomId: "", userId: "", start: "", end: "", purpose: "" });
-      })
-      .catch(() => alert("Error creating booking"));
+    const payload = {
+      ...booking,
+      userId: currentUser.userId,
+      start: toIsoDateTime(booking.start),
+      end: toIsoDateTime(booking.end),
+    };
+
+    if (!payload.start || !payload.end || payload.start >= payload.end) {
+      onError("Please enter a valid start and end time.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createBooking(payload);
+      setBooking({ roomId: "", start: "", end: "", purpose: "" });
+      onBookingCreated();
+    } catch (error) {
+      onError(error.message || "Error creating booking");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="mb-4">
       <h4>Create Booking</h4>
-      <input name="roomId" value={booking.roomId} onChange={handleChange} placeholder="Room ID" className="form-control mb-2" />
-      <input name="userId" value={booking.userId} onChange={handleChange} placeholder="User ID" className="form-control mb-2" />
-      <input name="start" value={booking.start} onChange={handleChange} placeholder="Start (YYYY-MM-DDTHH:MM:SS)" className="form-control mb-2" />
-      <input name="end" value={booking.end} onChange={handleChange} placeholder="End (YYYY-MM-DDTHH:MM:SS)" className="form-control mb-2" />
-      <input name="purpose" value={booking.purpose} onChange={handleChange} placeholder="Purpose" className="form-control mb-2" />
-      <button type="submit" className="btn btn-warning">Book Room</button>
+      <select name="roomId" value={booking.roomId} onChange={handleChange} required className="form-select mb-2">
+        <option value="">Select Room</option>
+        {rooms.map((room) => (
+          <option key={room.id} value={room.id}>
+            {room.name} ({room.location}, cap {room.capacity})
+          </option>
+        ))}
+      </select>
+      <input name="start" value={booking.start} onChange={handleChange} type="datetime-local" required className="form-control mb-2" />
+      <input name="end" value={booking.end} onChange={handleChange} type="datetime-local" required className="form-control mb-2" />
+      <input name="purpose" value={booking.purpose} onChange={handleChange} placeholder="Purpose" required className="form-control mb-2" />
+      <button type="submit" className="btn btn-warning" disabled={isSubmitting || rooms.length === 0}>
+        {isSubmitting ? "Booking..." : "Book Room"}
+      </button>
     </form>
   );
 }

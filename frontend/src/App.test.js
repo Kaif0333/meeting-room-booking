@@ -1,8 +1,18 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import { render, screen, waitFor } from "@testing-library/react";
+import App from "./App";
+import { getMe } from "./api";
 
-test('renders learn react link', () => {
+jest.mock("./api");
+
+beforeEach(() => {
+  getMe.mockRejectedValue(new Error("Unauthenticated"));
+});
+
+test("renders auth screen when unauthenticated", async () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+
+  await waitFor(() => {
+    expect(screen.getByText(/meeting room platform/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /login/i }).length).toBeGreaterThan(0);
+  });
 });

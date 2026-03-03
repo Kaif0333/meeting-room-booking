@@ -10,10 +10,22 @@ import java.util.Optional;
 @Service
 public class RoomService {
     private final RoomRepository repo;
-    public RoomService(RoomRepository repo) { this.repo = repo; }
+    private final AuditLogService auditLogService;
 
-    public Room addRoom(Room r) { return repo.save(r); }
+    public RoomService(RoomRepository repo, AuditLogService auditLogService) {
+        this.repo = repo;
+        this.auditLogService = auditLogService;
+    }
+
+    public Room addRoom(Room r) {
+        Room saved = repo.save(r);
+        auditLogService.log("ROOM_CREATED", "ROOM", saved.getId(), "Room created");
+        return saved;
+    }
     public List<Room> getAllRooms() { return repo.findAll(); }
     public Optional<Room> getRoom(String id) { return repo.findById(id); }
-    public void deleteRoom(String id) { repo.deleteById(id); }
+    public void deleteRoom(String id) {
+        repo.deleteById(id);
+        auditLogService.log("ROOM_DELETED", "ROOM", id, "Room deleted");
+    }
 }
